@@ -129,11 +129,8 @@ function generate(title, docs, filename, resolveLinks) {
     
     if (resolveLinks) {
         html = helper.resolveLinks(html); // turn {@link foo} into <a href="foodoc.html">foo</a>
-        
-        // Add a link target for external links @davidshimjs
-        html = html.toString().replace(/<a\s+([^>]*href\s*=\s*['"]*[^\s'"]*:\/\/)/ig, '<a target="_blank" $1');
     }
-
+    
     fs.writeFileSync(outpath, html, 'utf8');
 }
 
@@ -254,6 +251,54 @@ function buildNav(members) {
         });
     }
 
+if (members.modules.length) {
+        _.each(members.modules, function (v) {
+            nav.push({
+                type: 'module',
+                longname: v.longname,
+                name: v.name,
+                members: find({
+                    kind: 'member',
+                    memberof: v.longname
+                }),
+                methods: find({
+                    kind: 'function',
+                    memberof: v.longname
+                }),
+                typedefs: find({
+                    kind: 'typedef',
+                    memberof: v.longname
+                }),
+                events: find({
+                    kind: 'event',
+                    memberof: v.longname
+                })
+            });
+        });
+    }
+if (members.globals.length) {
+  nav.push({
+    type: 'namespace',
+    longname: "global",
+    name: "global",
+    members: find({
+      kind: 'member',
+      scope: "global"
+    }),
+    methods: find({
+      kind: 'function',
+      scope: "global"
+    }),
+    typedefs: find({
+      kind: 'typedef',
+      scope: "global"
+    }),
+    events: find({
+      kind: 'event',
+      scope: "global"
+    })
+  });
+}
     return nav;
 }
 
@@ -298,12 +343,12 @@ exports.publish = function(taffyData, opts, tutorials) {
         if (doclet.examples) {
             doclet.examples = doclet.examples.map(function(example) {
                 var caption, code;
-
-                if (example.match(/^\s*(?:<p>)?\s*<caption>([\s\S]+?)<\/caption>\s*(?:<\/p>)?[\s\r\n]*([\s\S]+)$/i)) {
+                
+                if (example.match(/^\s*<caption>([\s\S]+?)<\/caption>(\s*[\n\r])([\s\S]+)$/i)) {
                     caption = RegExp.$1;
-                    code    = RegExp.$2;
+                    code    = RegExp.$3;
                 }
-
+                
                 return {
                     caption: caption || '',
                     code: code || example
